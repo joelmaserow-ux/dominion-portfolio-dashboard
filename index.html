@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dominion Portfolio Dashboard</title>
+<style>
+  :root {
+    --bg: #0a0f1e;
+    --surface: #111827;
+    --surface2: #1f2937;
+    --surface3: #374151;
+    --border: #1f2937;
+    --text: #f9fafb;
+    --muted: #9ca3af;
+    --accent: #3b82f6;
+    --green: #22c55e;
+    --yellow: #f59e0b;
+    --orange: #f97316;
+    --red: #ef4444;
+    --red-dark: #dc2626;
+    --purple: #a855f7;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; line-height: 1.5; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* Layout */
+  .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .logo { width: 32px; height: 32px; background: var(--accent); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; }
+  .header-title { font-size: 16px; font-weight: 600; }
+  .header-sub { font-size: 12px; color: var(--muted); }
+  .header-meta { font-size: 11px; color: var(--muted); text-align: right; }
+  .sheets-link { font-size: 11px; color: var(--accent); }
+
+  .container { max-width: 1400px; margin: 0 auto; padding: 24px; }
+
+  /* Cards */
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+  .stat-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+  .stat-value { font-size: 24px; font-weight: 700; }
+  .stat-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .stat-green { color: var(--green); }
+  .stat-red { color: var(--red); }
+  .stat-yellow { color: var(--yellow); }
+  .stat-blue { color: var(--accent); }
+
+  /* Alert section */
+  .section { margin-bottom: 28px; }
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .section-title { font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+  .section-count { font-size: 12px; background: var(--surface2); padding: 2px 8px; border-radius: 12px; }
+
+  .alert-list { display: flex; flex-direction: column; gap: 6px; }
+  .alert-item { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid; border-radius: 6px; padding: 10px 14px; display: grid; grid-template-columns: 80px 1fr auto; gap: 12px; align-items: center; }
+  .alert-item.critical { border-left-color: var(--red); background: rgba(239,68,68,0.05); }
+  .alert-item.urgent { border-left-color: var(--orange); background: rgba(249,115,22,0.05); }
+  .alert-item.high { border-left-color: var(--yellow); background: rgba(245,158,11,0.05); }
+  .alert-badge { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .badge-critical { background: var(--red); color: white; }
+  .badge-urgent { background: var(--orange); color: white; }
+  .badge-high { background: var(--yellow); color: #111; }
+  .badge-active { background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid rgba(34,197,94,0.3); }
+  .badge-overdue { background: rgba(239,68,68,0.15); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
+  .badge-expired { background: rgba(239,68,68,0.15); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
+  .badge-riskexpired { background: rgba(239,68,68,0.25); color: var(--red); border: 1px solid var(--red); }
+  .badge-rolling { background: rgba(59,130,246,0.15); color: var(--accent); border: 1px solid rgba(59,130,246,0.3); }
+  .badge-expiring { background: rgba(245,158,11,0.15); color: var(--yellow); border: 1px solid rgba(245,158,11,0.3); }
+
+  .alert-info { min-width: 0; }
+  .alert-prop { font-weight: 600; font-size: 13px; }
+  .alert-tenant { color: var(--muted); font-size: 12px; }
+  .alert-issue { font-size: 12px; margin-top: 2px; }
+  .alert-action { text-align: right; min-width: 120px; }
+  .alert-pm { font-size: 11px; color: var(--muted); }
+  .alert-btn { font-size: 11px; color: var(--accent); cursor: pointer; }
+
+  /* Filter bar */
+  .filter-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+  .filter-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 5px 14px; font-size: 12px; cursor: pointer; color: var(--text); transition: all 0.15s; }
+  .filter-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .filter-btn.active { background: var(--accent); border-color: var(--accent); color: white; }
+  .search-input { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; font-size: 13px; color: var(--text); width: 220px; outline: none; }
+  .search-input:focus { border-color: var(--accent); }
+  .search-input::placeholder { color: var(--muted); }
+
+  /* Property cards */
+  .property-grid { display: flex; flex-direction: column; gap: 8px; }
+  .prop-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; transition: border-color 0.15s; }
+  .prop-card:hover { border-color: var(--surface3); }
+  .prop-header { padding: 14px 16px; display: grid; grid-template-columns: 100px 1fr 140px 140px 100px 120px; gap: 12px; align-items: center; cursor: pointer; user-select: none; }
+  .prop-header:hover { background: rgba(255,255,255,0.02); }
+  .prop-code { font-size: 11px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 0.05em; }
+  .prop-name-block {}
+  .prop-address { font-weight: 600; font-size: 13px; }
+  .prop-suburb { font-size: 11px; color: var(--muted); }
+  .prop-entity { font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .prop-rent { text-align: right; }
+  .prop-rent-main { font-weight: 600; font-size: 13px; }
+  .prop-rent-pa { font-size: 11px; color: var(--muted); }
+  .prop-rooms { text-align: center; }
+  .prop-rooms-main { font-weight: 600; font-size: 13px; }
+  .prop-rooms-sub { font-size: 11px; color: var(--muted); }
+  .prop-pm { font-size: 11px; color: var(--muted); }
+  .prop-pm a { color: var(--muted); }
+  .prop-pm a:hover { color: var(--accent); }
+  .prop-alert-count { display: flex; gap: 4px; justify-content: flex-end; }
+  .prop-expand { font-size: 11px; color: var(--muted); text-align: right; }
+  .chevron { display: inline-block; transition: transform 0.2s; font-size: 10px; }
+  .chevron.open { transform: rotate(90deg); }
+
+  /* Room rows */
+  .prop-rooms-detail { display: none; border-top: 1px solid var(--border); }
+  .prop-rooms-detail.open { display: block; }
+  .rooms-table { width: 100%; border-collapse: collapse; }
+  .rooms-table th { background: var(--surface2); padding: 8px 12px; text-align: left; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .rooms-table td { padding: 9px 12px; font-size: 12px; border-top: 1px solid rgba(255,255,255,0.04); }
+  .rooms-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .room-num { font-weight: 600; color: var(--muted); }
+  .tenant-name { font-weight: 600; }
+  .tenant-contact { color: var(--muted); font-size: 11px; }
+  .days-ok { color: var(--green); font-weight: 600; }
+  .days-warn { color: var(--yellow); font-weight: 600; }
+  .days-crit { color: var(--orange); font-weight: 600; }
+  .days-overdue { color: var(--red); font-weight: 600; }
+  .days-rolling { color: var(--accent); }
+  .action-note { font-size: 11px; color: var(--yellow); }
+  .action-urgent { font-size: 11px; color: var(--red); }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 0; margin-bottom: 20px; border-bottom: 1px solid var(--border); }
+  .tab { padding: 10px 20px; font-size: 13px; font-weight: 500; cursor: pointer; border-bottom: 2px solid transparent; color: var(--muted); transition: all 0.15s; }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* PM Directory */
+  .pm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+  .pm-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+  .pm-name { font-weight: 600; font-size: 14px; margin-bottom: 2px; }
+  .pm-agency { font-size: 12px; color: var(--accent); margin-bottom: 8px; }
+  .pm-detail { font-size: 12px; color: var(--muted); margin-bottom: 3px; }
+  .pm-props { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
+  .pm-prop-badge { background: var(--surface2); border: 1px solid var(--border); border-radius: 4px; padding: 2px 6px; font-size: 10px; font-weight: 600; color: var(--muted); }
+
+  /* Vacancy table */
+  .vacancy-table { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+  .vacancy-table th { background: var(--surface2); padding: 10px 16px; text-align: left; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; }
+  .vacancy-table td { padding: 10px 16px; font-size: 13px; border-top: 1px solid var(--border); }
+  .vac-green { color: var(--green); }
+  .vac-yellow { color: var(--yellow); }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .prop-header { grid-template-columns: 1fr auto; }
+    .prop-pm, .prop-rooms, .prop-rent, .prop-code { display: none; }
+    .prop-alert-count { display: none; }
+  }
+  @media (max-width: 600px) {
+    .container { padding: 12px; }
+    .alert-item { grid-template-columns: 1fr; }
+    .alert-action { text-align: left; }
+    .stat-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* Utility */
+  .hidden { display: none !important; }
+  .text-red { color: var(--red); }
+  .text-green { color: var(--green); }
+  .text-yellow { color: var(--yellow); }
+  .text-muted { color: var(--muted); }
+  .mt-8 { margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-left">
+    <div class="logo">D</div>
+    <div>
+      <div class="header-title">Dominion Portfolio Dashboard</div>
+      <div class="header-sub">AI-Managed Lease Register</div>
+    </div>
+  </div>
+  <div class="header-meta">
+    <div id="last-updated">Loading...</div>
+    <a id="sheets-link" class="sheets-link" href="#" target="_blank">Open Google Sheets ↗</a>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Stats Row -->
+  <div class="stat-grid" id="stat-grid">
+    <div class="stat-card">
+      <div class="stat-label">Properties</div>
+      <div class="stat-value stat-blue" id="stat-properties">—</div>
+      <div class="stat-sub">Active (excl. development)</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total Rooms</div>
+      <div class="stat-value stat-blue" id="stat-rooms">—</div>
+      <div class="stat-sub" id="stat-occ">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Annual Rent</div>
+      <div class="stat-value stat-green" id="stat-rent">—</div>
+      <div class="stat-sub" id="stat-weekly">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Occupancy</div>
+      <div class="stat-value stat-green" id="stat-occupancy">—</div>
+      <div class="stat-sub" id="stat-vacant">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Critical</div>
+      <div class="stat-value stat-red" id="stat-critical">—</div>
+      <div class="stat-sub">Expires ≤ 7 days</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Urgent</div>
+      <div class="stat-value stat-yellow" id="stat-urgent">—</div>
+      <div class="stat-sub">Expired / overdue</div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('alerts')">Action Items</div>
+    <div class="tab" onclick="switchTab('properties')">Properties</div>
+    <div class="tab" onclick="switchTab('pms')">Property Managers</div>
+    <div class="tab" onclick="switchTab('vacancy')">Vacancy</div>
+  </div>
+
+  <!-- Alerts Tab -->
+  <div class="tab-content active" id="tab-alerts">
+    <div class="section" id="critical-section">
+      <div class="section-header">
+        <div class="section-title text-red">🔴 Critical</div>
+        <div class="section-count" id="critical-count">0</div>
+      </div>
+      <div class="alert-list" id="critical-list"></div>
+    </div>
+    <div class="section" id="urgent-section">
+      <div class="section-header">
+        <div class="section-title" style="color:var(--orange)">🟠 Urgent</div>
+        <div class="section-count" id="urgent-count">0</div>
+      </div>
+      <div class="alert-list" id="urgent-list"></div>
+    </div>
+    <div class="section" id="high-section">
+      <div class="section-header">
+        <div class="section-title text-yellow">🟡 High Priority</div>
+        <div class="section-count" id="high-count">0</div>
+      </div>
+      <div class="alert-list" id="high-list"></div>
+    </div>
+  </div>
+
+  <!-- Properties Tab -->
+  <div class="tab-content" id="tab-properties">
+    <div class="filter-bar">
+      <input type="text" class="search-input" id="search-input" placeholder="Search address, tenant, PM..." oninput="filterProperties()">
+      <div id="suburb-filters" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+    </div>
+    <div class="property-grid" id="property-grid"></div>
+  </div>
+
+  <!-- PMs Tab -->
+  <div class="tab-content" id="tab-pms">
+    <div class="pm-grid" id="pm-grid"></div>
+  </div>
+
+  <!-- Vacancy Tab -->
+  <div class="tab-content" id="tab-vacancy">
+    <table class="vacancy-table" id="vacancy-table">
+      <thead>
+        <tr>
+          <th>Suburb</th>
+          <th>Total Rooms</th>
+          <th>Occupied</th>
+          <th>Vacant</th>
+          <th>Vacancy %</th>
+        </tr>
+      </thead>
+      <tbody id="vacancy-tbody"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+const DATA_URL = './data.json';
+let DATA = null;
+let activeSuburb = 'All';
+
+async function loadData() {
+  try {
+    const res = await fetch(DATA_URL + '?t=' + Date.now());
+    DATA = await res.json();
+    render();
+  } catch(e) {
+    document.querySelector('.container').innerHTML = '<div style="padding:40px;text-align:center;color:var(--red)">Failed to load data.json — ' + e.message + '</div>';
+  }
+}
+
+function fmt(n) {
+  return '$' + Math.round(n).toLocaleString('en-AU');
+}
+
+function render() {
+  const m = DATA.meta;
+  const s = DATA.portfolio_summary;
+
+  document.getElementById('last-updated').textContent = 'Updated: ' + m.generated;
+  document.getElementById('sheets-link').href = m.google_sheets_url;
+
+  document.getElementById('stat-properties').textContent = s.total_properties;
+  document.getElementById('stat-rooms').textContent = s.total_rooms;
+  document.getElementById('stat-occ').textContent = s.occupied_rooms + ' occupied, ' + s.vacant_rooms + ' vacant';
+  document.getElementById('stat-rent').textContent = fmt(s.total_annual_rent);
+  document.getElementById('stat-weekly').textContent = fmt(s.total_weekly_rent) + '/wk gross';
+  document.getElementById('stat-occupancy').textContent = s.occupancy_pct.toFixed(1) + '%';
+  document.getElementById('stat-vacant').textContent = s.vacant_rooms + ' vacant room(s)';
+  document.getElementById('stat-critical').textContent = s.critical_count;
+  document.getElementById('stat-urgent').textContent = s.urgent_count;
+
+  renderAlerts();
+  renderProperties();
+  renderPMs();
+  renderVacancy();
+  renderSuburbFilters();
+}
+
+function renderAlerts() {
+  const alerts = DATA.alerts;
+  const groups = { CRITICAL: [], URGENT: [], HIGH: [] };
+  alerts.forEach(a => {
+    if (groups[a.priority]) groups[a.priority].push(a);
+  });
+
+  renderAlertGroup('critical-list', 'critical-count', groups.CRITICAL, 'critical');
+  renderAlertGroup('urgent-list', 'urgent-count', groups.URGENT, 'urgent');
+  renderAlertGroup('high-list', 'high-count', groups.HIGH, 'high');
+}
+
+function renderAlertGroup(listId, countId, items, cls) {
+  const list = document.getElementById(listId);
+  document.getElementById(countId).textContent = items.length;
+  list.innerHTML = items.map(a => {
+    const daysText = a.days < 0
+      ? Math.abs(a.days) + ' days overdue'
+      : a.days + ' days remaining';
+    const daysColor = a.days < 0 ? 'var(--red)' : (a.days <= 7 ? 'var(--red)' : (a.days <= 30 ? 'var(--orange)' : 'var(--yellow)'));
+    return `<div class="alert-item ${cls}">
+      <span class="alert-badge badge-${cls}">${a.priority}</span>
+      <div class="alert-info">
+        <div class="alert-prop">${a.property_id} — ${a.address} &nbsp;<span class="text-muted">Rm ${a.room}</span></div>
+        <div class="alert-tenant">${a.tenant}</div>
+        <div class="alert-issue" style="color:${daysColor}">${a.issue}</div>
+      </div>
+      <div class="alert-action">
+        <div class="alert-pm">${a.pm}</div>
+        <a class="alert-btn" href="mailto:${a.pm_email}">${a.action} →</a>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function statusBadge(s) {
+  const map = {
+    'Active': 'badge-active',
+    'Critical': 'badge-critical',
+    'Overdue': 'badge-overdue',
+    'Expired': 'badge-expired',
+    'RiskExpired': 'badge-riskexpired',
+  };
+  const labels = {
+    'Active': 'Active',
+    'Critical': 'Critical',
+    'Overdue': 'Overdue',
+    'Expired': 'Expired',
+    'RiskExpired': 'Risk!',
+  };
+  if (s === 'Active') return '';
+  const cls = map[s] || 'badge-overdue';
+  const label = labels[s] || s;
+  return `<span class="alert-badge ${cls}" style="font-size:9px">${label}</span>`;
+}
+
+function daysClass(d) {
+  if (d === 9999) return 'days-rolling';
+  if (d < 0) return 'days-overdue';
+  if (d <= 14) return 'days-crit';
+  if (d <= 45) return 'days-warn';
+  return 'days-ok';
+}
+
+function daysText(d, end) {
+  if (d === 9999) return 'Rolling';
+  if (end === 'Rolling') return 'Rolling';
+  if (d < 0) return Math.abs(d) + 'd overdue';
+  return d + ' days';
+}
+
+function renderProperties() {
+  const props = DATA.properties;
+  const leasesByProp = {};
+  DATA.leases.forEach(l => {
+    if (!leasesByProp[l.property_id]) leasesByProp[l.property_id] = [];
+    leasesByProp[l.property_id].push(l);
+  });
+
+  const grid = document.getElementById('property-grid');
+  grid.innerHTML = props.map(p => {
+    const rooms = leasesByProp[p.id] || [];
+    const alertCount = DATA.alerts.filter(a => a.property_id === p.id);
+    const critCount = alertCount.filter(a => a.priority === 'CRITICAL').length;
+    const urgCount = alertCount.filter(a => a.priority === 'URGENT').length;
+    const highCount = alertCount.filter(a => a.priority === 'HIGH').length;
+
+    const alertBadges = [
+      critCount > 0 ? `<span class="alert-badge badge-critical" style="font-size:9px">${critCount} CRIT</span>` : '',
+      urgCount > 0 ? `<span class="alert-badge badge-urgent" style="font-size:9px">${urgCount} URG</span>` : '',
+      highCount > 0 ? `<span class="alert-badge badge-high" style="font-size:9px">${highCount} HIGH</span>` : '',
+    ].filter(Boolean).join(' ');
+
+    const pmPhone = p.pm_phone ? ` · ${p.pm_phone}` : '';
+
+    const roomRows = rooms.map(r => {
+      const dc = daysClass(r.days_remaining);
+      const dt = daysText(r.days_remaining, r.lease_end);
+      const leaseEnd = r.lease_end === 'Rolling' ? 'Rolling' : (r.lease_end ? r.lease_end.slice(0,10) : '—');
+      const hasAction = r.action && r.action.length > 0;
+      const isBad = ['Overdue','Expired','RiskExpired','Critical'].includes(r.status);
+      return `<tr>
+        <td class="room-num">Rm ${r.room}</td>
+        <td><div class="tenant-name">${r.tenant}</div>${r.email ? `<div class="tenant-contact">${r.email}${r.phone ? ' · ' + r.phone : ''}</div>` : ''}</td>
+        <td>${statusBadge(r.status)}</td>
+        <td>${fmt(r.weekly_rent)}<span class="text-muted">/wk</span></td>
+        <td>${r.tenure}</td>
+        <td>${leaseEnd}</td>
+        <td class="${dc}">${dt}</td>
+        <td>${hasAction ? `<div class="${isBad ? 'action-urgent' : 'action-note'}">${r.action}</div>` : ''}</td>
+      </tr>`;
+    }).join('');
+
+    return `<div class="prop-card" data-suburb="${p.suburb}" data-id="${p.id}">
+      <div class="prop-header" onclick="toggleProp('${p.id}')">
+        <div>
+          <div class="prop-code">${p.code}</div>
+          <div style="font-size:10px;color:var(--muted)">${p.id}</div>
+        </div>
+        <div class="prop-name-block">
+          <div class="prop-address">${p.address}</div>
+          <div class="prop-suburb">${p.suburb}, ${p.state}</div>
+          <div class="prop-entity">${p.entity}</div>
+        </div>
+        <div class="prop-rent">
+          <div class="prop-rent-main">${fmt(p.weekly_rent)}<span style="font-size:11px;font-weight:400">/wk</span></div>
+          <div class="prop-rent-pa">${fmt(p.annual_rent)}/yr</div>
+        </div>
+        <div class="prop-rooms">
+          <div class="prop-rooms-main">${p.rooms} rooms</div>
+          <div class="prop-rooms-sub">${p.lender}</div>
+        </div>
+        <div class="prop-pm">
+          <div>${p.pm}</div>
+          <div><a href="mailto:${p.pm_email}" onclick="event.stopPropagation()">${p.pm_email}</a></div>
+          <div>${pmPhone}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+          <div class="prop-alert-count">${alertBadges || '<span class="text-muted" style="font-size:11px">All clear</span>'}</div>
+          <div class="prop-expand"><span class="chevron" id="chev-${p.id}">▶</span></div>
+        </div>
+      </div>
+      <div class="prop-rooms-detail" id="rooms-${p.id}">
+        <table class="rooms-table">
+          <thead>
+            <tr>
+              <th>Room</th>
+              <th>Tenant</th>
+              <th>Status</th>
+              <th>Rent</th>
+              <th>Tenure</th>
+              <th>Lease End</th>
+              <th>Days</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>${roomRows}</tbody>
+        </table>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleProp(id) {
+  const detail = document.getElementById('rooms-' + id);
+  const chev = document.getElementById('chev-' + id);
+  detail.classList.toggle('open');
+  chev.classList.toggle('open');
+}
+
+function renderSuburbFilters() {
+  const suburbs = ['All', ...new Set(DATA.properties.map(p => p.suburb).filter(s => s !== 'TBC'))];
+  const container = document.getElementById('suburb-filters');
+  container.innerHTML = suburbs.map(s =>
+    `<button class="filter-btn${s === 'All' ? ' active' : ''}" onclick="setSuburb('${s}')">${s}</button>`
+  ).join('');
+}
+
+function setSuburb(s) {
+  activeSuburb = s;
+  document.querySelectorAll('.filter-btn').forEach(b => {
+    b.classList.toggle('active', b.textContent === s);
+  });
+  filterProperties();
+}
+
+function filterProperties() {
+  const query = document.getElementById('search-input').value.toLowerCase();
+  const leasesByProp = {};
+  DATA.leases.forEach(l => {
+    if (!leasesByProp[l.property_id]) leasesByProp[l.property_id] = [];
+    leasesByProp[l.property_id].push(l);
+  });
+
+  document.querySelectorAll('.prop-card').forEach(card => {
+    const propId = card.dataset.id;
+    const prop = DATA.properties.find(p => p.id === propId);
+    const suburb = card.dataset.suburb;
+    const tenants = (leasesByProp[propId] || []).map(l => l.tenant.toLowerCase()).join(' ');
+    const searchStr = [prop.address, prop.suburb, prop.code, prop.pm, prop.entity, tenants].join(' ').toLowerCase();
+
+    const suburbMatch = activeSuburb === 'All' || suburb === activeSuburb;
+    const queryMatch = !query || searchStr.includes(query);
+    card.classList.toggle('hidden', !(suburbMatch && queryMatch));
+  });
+}
+
+function renderPMs() {
+  const grid = document.getElementById('pm-grid');
+  grid.innerHTML = DATA.property_managers.map(pm => {
+    const propBadges = pm.properties.map(p => `<span class="pm-prop-badge">${p}</span>`).join('');
+    return `<div class="pm-card">
+      <div class="pm-name">${pm.name}</div>
+      <div class="pm-agency">${pm.agency || 'Independent'}</div>
+      ${pm.email ? `<div class="pm-detail"><a href="mailto:${pm.email}">${pm.email}</a></div>` : ''}
+      ${pm.phone ? `<div class="pm-detail">${pm.phone}</div>` : ''}
+      <div class="pm-props mt-8">${propBadges}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderVacancy() {
+  const tbody = document.getElementById('vacancy-tbody');
+  tbody.innerHTML = DATA.vacancy_stats.map(v => {
+    const cls = v.vacancy_pct === 0 ? 'vac-green' : (v.vacancy_pct > 2 ? 'text-red' : 'vac-yellow');
+    return `<tr>
+      <td><strong>${v.suburb}</strong></td>
+      <td>${v.total_rooms}</td>
+      <td>${v.occupied}</td>
+      <td>${v.vacant}</td>
+      <td class="${cls}">${v.vacancy_pct.toFixed(2)}%</td>
+    </tr>`;
+  }).join('');
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    const names = ['alerts', 'properties', 'pms', 'vacancy'];
+    t.classList.toggle('active', names[i] === name);
+  });
+  document.querySelectorAll('.tab-content').forEach(tc => {
+    tc.classList.toggle('active', tc.id === 'tab-' + name);
+  });
+}
+
+loadData();
+</script>
+</body>
+</html>
