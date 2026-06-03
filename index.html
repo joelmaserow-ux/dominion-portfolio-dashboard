@@ -174,9 +174,35 @@
   .text-yellow { color: var(--yellow); }
   .text-muted { color: var(--muted); }
   .mt-8 { margin-top: 8px; }
+
+  /* Auth overlay */
+  .auth-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 9999; display: flex; align-items: center; justify-content: center; }
+  .auth-overlay.hidden { display: none !important; }
+  .auth-box { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 40px 36px; width: 100%; max-width: 360px; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+  .auth-logo { width: 52px; height: 52px; background: var(--accent); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 24px; margin: 0 auto 20px; }
+  .auth-title { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+  .auth-sub { font-size: 13px; color: var(--muted); margin-bottom: 28px; }
+  .auth-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 11px 14px; color: var(--text); font-size: 14px; outline: none; margin-bottom: 12px; transition: border-color 0.15s; }
+  .auth-input:focus { border-color: var(--accent); }
+  .auth-input.shake { animation: shake 0.3s ease; }
+  .auth-btn { width: 100%; background: var(--accent); color: white; border: none; border-radius: 6px; padding: 11px 14px; font-size: 14px; font-weight: 600; cursor: pointer; transition: opacity 0.15s; }
+  .auth-btn:hover { opacity: 0.88; }
+  .auth-error { font-size: 12px; color: var(--red); margin-top: 10px; min-height: 18px; }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-6px)} 40%,80%{transform:translateX(6px)} }
 </style>
 </head>
 <body>
+
+<div id="auth-overlay" class="auth-overlay">
+  <div class="auth-box">
+    <div class="auth-logo">D</div>
+    <div class="auth-title">Dominion Portfolio</div>
+    <div class="auth-sub">Enter your password to access the dashboard</div>
+    <input type="password" id="auth-input" class="auth-input" placeholder="Password" autocomplete="current-password">
+    <button class="auth-btn" id="auth-btn" onclick="checkAuth()">Access Dashboard</button>
+    <div class="auth-error" id="auth-error"></div>
+  </div>
+</div>
 
 <header class="header">
   <div class="header-left">
@@ -580,6 +606,42 @@ function switchTab(name) {
     tc.classList.toggle('active', tc.id === 'tab-' + name);
   });
 }
+
+// --- Auth ---
+const AUTH_HASH = '1e888c7c8c3ef3e8e4e7cd9387aac90654dcb7c6384e33a19d6f4991966c6515';
+const AUTH_KEY  = 'dominion_auth_v1';
+
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+async function checkAuth() {
+  const input = document.getElementById('auth-input');
+  const errEl = document.getElementById('auth-error');
+  const hash  = await sha256(input.value);
+  if (hash === AUTH_HASH) {
+    sessionStorage.setItem(AUTH_KEY, '1');
+    document.getElementById('auth-overlay').classList.add('hidden');
+    errEl.textContent = '';
+  } else {
+    errEl.textContent = 'Incorrect password. Please try again.';
+    input.classList.remove('shake');
+    void input.offsetWidth;
+    input.classList.add('shake');
+    input.value = '';
+    input.focus();
+  }
+}
+
+document.getElementById('auth-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') checkAuth();
+});
+
+if (sessionStorage.getItem(AUTH_KEY) === '1') {
+  document.getElementById('auth-overlay').classList.add('hidden');
+}
+// --- End Auth ---
 
 loadData();
 </script>
